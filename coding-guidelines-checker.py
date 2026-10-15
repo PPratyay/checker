@@ -281,6 +281,36 @@ def check_file(source: Path, clang_args: Iterable[str] = ()) -> list[Finding]:
     return sorted(set(findings), key=lambda finding: (finding.line, finding.message))
 
 
+def check_category(source: Path, category: str, clang_args: Iterable[str] = ()) -> list[Finding]:
+    """Run exactly one named guideline checker for a source file."""
+    lines = _source_lines(source)
+    options = cindex.TranslationUnit.PARSE_DETAILED_PROCESSING_RECORD
+    index = cindex.Index.create()
+    tu = index.parse(str(source), args=list(clang_args), options=options)
+    is_header = source.suffix.lower() in {".h", ".hh", ".hpp", ".hxx"}
+    items = _cursor_items(tu, source, _include_guard_names(lines))
+    if category == "U2_1_1":
+        findings = _layout_findings(lines, items, is_header)
+    elif category == "U2_1_2":
+        findings = _banner_findings(lines, items)
+    elif category == "U4_1_1":
+        findings = _precedence_findings(lines)
+    elif category == "U4_1_2":
+        findings = _increment_findings(lines)
+    elif category == "U4_2_1":
+        findings = _preprocessor_findings(lines)
+    elif category in {"U10_5_1", "U10_5_2"}:
+        functions = _function_infos(tu, source)
+        findings = _function_exit_findings(lines, functions)
+        if category == "U10_5_1":
+            findings = [finding for finding in findings if "multiple return" in finding.message]
+        else:
+            findings = [finding for finding in findings if "void function" in finding.message]
+    else:
+        raise ValueError(f"unknown rule category: {category}")
+    return sorted(set(findings), key=lambda finding: (finding.line, finding.message))
+
+
 def write_review_comments(source: Path, findings: list[Finding]) -> None:
     """Insert each finding above its original source line, without duplicates."""
     if not findings:

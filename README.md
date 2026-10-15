@@ -67,6 +67,22 @@ python .\coding-guidelines-checker.py --write-comments $files
 
 Each generated annotation has the form `/* review-comment -- explanation */` and is placed immediately above the violating source line.
 
+## Separate Python checkers
+
+Each rule also has its own Python script. They share the libclang parser and comment writer, but only run the selected rule:
+
+```powershell
+python .\rules\U2_1_1_file_section_order.py .\tests\rules\U2_1_1_file_section_order.c --write-comments
+python .\rules\U2_1_2_code_section_banners.py .\tests\rules\U2_1_2_code_section_banners.c --write-comments
+python .\rules\U4_1_1_explicit_parentheses.py .\tests\rules\U4_1_1_explicit_parentheses.c --write-comments
+python .\rules\U4_1_2_isolated_increment.py .\tests\rules\U4_1_2_isolated_increment.c --write-comments
+python .\rules\U4_2_1_preprocessor_column.py .\tests\rules\U4_2_1_preprocessor_column.c --write-comments
+python .\rules\U10_5_1_single_return.py .\tests\rules\U10_5_1_single_return.c --write-comments
+python .\rules\U10_5_2_void_explicit_return.py .\tests\rules\U10_5_2_void_explicit_return.c --write-comments
+```
+
+The combined `coding-guidelines-checker.py` remains available when all rules should run together. In either mode, `--write-comments` inserts comments into the source; without it, findings are printed as a dry run.
+
 To embed the review comments directly into the invalid files instead of printing findings, run:
 
 ```powershell
